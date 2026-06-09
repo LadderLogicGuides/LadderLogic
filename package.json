@@ -1,8 +1,0 @@
-{
-  "name": "edge-signal",
-  "version": "2.0.0",
-  "type": "module",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.33.1"
-  }
-}
