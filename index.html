@@ -1057,6 +1057,56 @@ Return only valid JSON.
   }
 }
 
+{
+  "name": "edge-signal-api",
+  "version": "1.0.0",
+  "type": "module"
+}
+
+{
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node"
+    }
+  }
+}
+
+git init
+git add .
+git commit -m "initial"
+git push
+
+export default async function handler(req, res) {
+
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    '*'
+  );
+
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type'
+  );
+
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'POST,OPTIONS'
+  );
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // rest of code...
+}
+
+{
+  "currentPrice": "...",
+  "priceChange": "..."
+}
+
+
+
 // ── Helpers ────────────────────────────────────────────────
 function valCls(s) { s=(s||'').toUpperCase(); if(s==='OVERVALUED')return'sc-bear'; if(s==='UNDERVALUED')return'sc-bull'; return'sc-neu'; }
 function momCls(s) { s=(s||'').toUpperCase(); if(s==='OVERBOUGHT')return'sc-bear'; if(s==='OVERSOLD')return'sc-bull'; return'sc-neu'; }
