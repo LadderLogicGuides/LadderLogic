@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Edge Signal — AI Stock Evaluator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070D;--surface:#0F0F1A;--card:#141422;--card2:#181828;
+  --border:#1E1E30;--border2:#252538;--muted:#3A3A55;
+  --dim:#7070A0;--text:#D8D8F0;--bright:#FFFFFF;
+  --accent:#7C6EF5;--accent2:#A48BFA;--accentg:linear-gradient(135deg,#7C6EF5,#A48BFA);
+  --green:#34D399;--gbg:#071F17;--gbd:#0D3828;
+  --red:#F87171;--rbg:#1F0707;--rbd:#381010;
+  --yellow:#FBBF24;--ybg:#1F1507;--ybd:#382A08;
+  --blue:#60A5FA;--bbg:#071525;--bbd:#0D2840;
+  --r:10px;--rl:14px;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2);text-decoration:none}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── Shell ── */
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 100px}
+
+/* ── Nav ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0 18px;border-bottom:1px solid var(--border);margin-bottom:44px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-mark{width:34px;height:34px;background:var(--accentg);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#fff;letter-spacing:-1px;flex-shrink:0}
+.logo-name{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--bright);letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-live{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--dim)}
+
+/* ── Ticker tape ── */
+.tape-wrap{margin-bottom:36px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+
+/* ── Search ── */
+.search-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:26px;margin-bottom:14px}
+.search-row{display:flex;gap:12px;margin-bottom:18px}
+.ticker-input{flex:0 0 170px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:13px 15px;font-family:'Space Mono',monospace;font-size:18px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--bright);outline:none;transition:border-color .2s,box-shadow .2s}
+.ticker-input::placeholder{color:var(--muted);font-weight:400;letter-spacing:1.5px;font-size:13px}
+.ticker-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,110,245,.14)}
+.run-btn{flex:1;background:var(--accentg);border:none;border-radius:var(--r);padding:13px 22px;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .1s;letter-spacing:-.2px}
+.run-btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
+.run-btn:active:not(:disabled){transform:translateY(0)}
+.run-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.chips-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.8px;padding:5px 11px;border-radius:6px;border:1px solid var(--border2);color:var(--dim);background:var(--card);cursor:pointer;transition:all .14s}
+.chip:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,110,245,.07)}
+
+/* ── Error ── */
+.err{background:var(--rbg);border:1px solid var(--rbd);border-radius:var(--r);padding:13px 16px;font-size:13px;color:var(--red);display:flex;align-items:flex-start;gap:8px;margin-bottom:14px}
+.err.hidden{display:none!important}
+
+/* ── Empty / loading states ── */
+.empty{text-align:center;padding:54px 20px}
+.empty-icon{font-size:40px;opacity:.25;margin-bottom:14px}
+.empty-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:7px}
+.empty-sub{font-size:13px;color:var(--dim);line-height:1.65;max-width:380px;margin:0 auto}
+.loading{text-align:center;padding:54px 20px;display:none}
+.loading.show{display:block}
+.spin{width:38px;height:38px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-tkr{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--bright);letter-spacing:4px;margin-bottom:6px}
+.loading-step{font-size:12px;color:var(--dim);letter-spacing:.5px;min-height:18px}
+
+/* ── Results ── */
+#results{display:none}
+#results.show{display:block}
+
+/* Identity row */
+.id-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:5px}
+.id-ticker{font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--bright);letter-spacing:2px}
+.id-name{font-size:15px;color:var(--dim);margin-top:3px}
+.id-sector{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--dim);white-space:nowrap;align-self:flex-start;margin-top:5px}
+.price-row{display:flex;align-items:baseline;gap:11px;margin-bottom:26px}
+.price{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--bright)}
+.price-ch{font-size:13px;color:var(--dim)}
+
+/* ── Two-column layout ── */
+.main-cols{display:grid;grid-template-columns:1fr 340px;gap:18px;margin-bottom:18px}
+@media(max-width:760px){.main-cols{grid-template-columns:1fr}}
+
+/* ── TradingView panels ── */
+.tv-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.tv-panel-title{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:14px 18px 0}
+.tv-chart-wrap{border-radius:var(--rl);overflow:hidden;border:1px solid var(--border);margin-bottom:18px}
+
+/* ── Score cards ── */
+.score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:580px){.score-grid{grid-template-columns:repeat(2,1fr)}}
+.sc{border-radius:var(--r);padding:13px 15px;border:1px solid}
+.sc .lbl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;opacity:.7}
+.sc .val{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;line-height:1.2;margin-bottom:3px}
+.sc .sub{font-size:10px;opacity:.55}
+.bull{background:var(--gbg);border-color:var(--gbd);color:var(--green)}
+.bear{background:var(--rbg);border-color:var(--rbd);color:var(--red)}
+.neu{background:var(--card);border-color:var(--border2);color:var(--dim)}
+.warn{background:var(--ybg);border-color:var(--ybd);color:var(--yellow)}
+
+/* ── Verdict box ── */
+.verdict{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:22px;margin-bottom:18px;position:relative;overflow:hidden}
+.verdict::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--blue))}
+.v-top{display:flex;align-items:center;flex-wrap:wrap;gap:11px;margin-bottom:12px}
+.ap{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:8px;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.8px}
+.ap-buy{background:var(--gbg);color:var(--green);border:1px solid var(--gbd)}
+.ap-sell{background:var(--rbg);color:var(--red);border:1px solid var(--rbd)}
+.ap-hold{background:var(--ybg);color:var(--yellow);border:1px solid var(--ybd)}
+.ap-watch{background:var(--bbg);color:var(--blue);border:1px solid var(--bbd)}
+.v-meta{font-size:12px;color:var(--dim)}
+.conf-wrap{margin-left:auto;text-align:right}
+.conf-num{font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--accent2)}
+.conf-lbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+.cbar-track{height:3px;border-radius:2px;background:var(--border);margin:12px 0 15px;overflow:hidden}
+.cbar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1.1s cubic-bezier(.16,1,.3,1)}
+.v-text{font-size:14px;line-height:1.8;color:var(--text)}
+
+/* ── Analysis 2-col grid ── */
+.a2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:540px){.a2{grid-template-columns:1fr}}
+.acard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.acard h3{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.acard p{font-size:13px;line-height:1.72;color:var(--text)}
+.tl{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px}
+.tl span{font-size:11px;color:var(--dim)}
+.tl span strong{color:var(--text)}
+.rbar{height:4px;border-radius:2px;background:var(--border);margin-top:9px;overflow:hidden}
+.rfill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.16,1,.3,1)}
+
+/* ── Catalysts ── */
+.cats{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.cats h3{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.cat-list{list-style:none}
+.cat-li{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.55;color:var(--text)}
+.cat-li:last-child{border-bottom:none}
+.cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.cpos{background:var(--green)}.cneg{background:var(--red)}.cneu{background:var(--muted)}
+
+/* ── Trend strip ── */
+.trend{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--dim);margin-bottom:26px;display:flex;align-items:flex-start;gap:9px}
+
+/* ── Bottom TV row ── */
+.tv-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:640px){.tv-row{grid-template-columns:1fr}}
+.tv-full{margin-bottom:16px}
+
+/* ── Disclaimer ── */
+.disc{font-size:11px;color:var(--muted);line-height:1.6;text-align:center;padding:18px 0 0;border-top:1px solid var(--border)}
+
+/* ── Footer ── */
+footer{text-align:center;padding:28px 0;border-top:1px solid var(--border);margin-top:56px;font-size:11px;color:var(--muted)}
+footer span{color:var(--accent2)}
+
+/* ── Mobile tweaks ── */
+@media(max-width:520px){
+  .search-row{flex-direction:column}
+  .ticker-input{flex:none;width:100%}
+  .run-btn{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Nav -->
+<nav>
+  <div class="logo">
+    <div class="logo-mark">ES</div>
+    <div>
+      <div class="logo-name">Edge Signal</div>
+      <div class="logo-sub">AI Stock Evaluator</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-dot"></div>
+    <span class="nav-live">LIVE DATA</span>
+  </div>
+</nav>
+
+<!-- TradingView ticker tape -->
+<div class="tape-wrap">
+  <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+    {
+      "symbols":[
+        {"proName":"FOREXCOM:SPXUSD","title":"S&P 500"},
+        {"proName":"FOREXCOM:NSXUSD","title":"Nasdaq 100"},
+        {"proName":"FX_IDC:EURUSD","title":"EUR/USD"},
+        {"proName":"BITSTAMP:BTCUSD","title":"Bitcoin"},
+        {"description":"Apple","proName":"NASDAQ:AAPL"},
+        {"description":"NVIDIA","proName":"NASDAQ:NVDA"},
+        {"description":"Microsoft","proName":"NASDAQ:MSFT"},
+        {"description":"Tesla","proName":"NASDAQ:TSLA"},
+        {"description":"Amazon","proName":"NASDAQ:AMZN"},
+        {"description":"Meta","proName":"NASDAQ:META"},
+        {"description":"Google","proName":"NASDAQ:GOOGL"},
+        {"description":"JPMorgan","proName":"NYSE:JPM"}
+      ],
+      "showSymbolLogo":true,
+      "isTransparent":true,
+      "displayMode":"adaptive",
+      "colorTheme":"dark",
+      "locale":"en"
+    }
+    </script>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-wrap">
+  <div class="search-row">
+    <input class="ticker-input" id="tickerInput" type="text" maxlength="6"
+      placeholder="TICKER" autocomplete="off" spellcheck="false"
+      aria-label="Enter stock ticker symbol"/>
+    <button class="run-btn" id="runBtn" onclick="runAnalysis()">
+      ⚡ Run Analysis
+    </button>
+  </div>
+  <div class="chips-lbl">Quick picks</div>
+  <div class="chips">
+    <span class="chip" onclick="pick('AAPL')">AAPL</span>
+    <span class="chip" onclick="pick('NVDA')">NVDA</span>
+    <span class="chip" onclick="pick('TSLA')">TSLA</span>
+    <span class="chip" onclick="pick('MSFT')">MSFT</span>
+    <span class="chip" onclick="pick('AMZN')">AMZN</span>
+    <span class="chip" onclick="pick('META')">META</span>
+    <span class="chip" onclick="pick('GOOGL')">GOOGL</span>
+    <span class="chip" onclick="pick('JPM')">JPM</span>
+    <span class="chip" onclick="pick('SPY')">SPY</span>
+    <span class="chip" onclick="pick('BRK.B')">BRK.B</span>
+    <span class="chip" onclick="pick('AMD')">AMD</span>
+    <span class="chip" onclick="pick('NFLX')">NFLX</span>
+  </div>
+</div>
+
+<!-- Error -->
+<div class="err hidden" id="errBox">
+  <span>⚠</span><span id="errMsg">Something went wrong.</span>
+</div>
+
+<!-- Empty state -->
+<div class="empty" id="emptyState">
+  <div class="empty-icon">📊</div>
+  <div class="empty-title">Enter a ticker to get started</div>
+  <div class="empty-sub">Full AI evaluation plus live TradingView charts, technicals, fundamentals, and news — all in one view.</div>
+</div>
+
+<!-- Loading -->
+<div class="loading" id="loadingBox">
+  <div class="spin"></div>
+  <div class="loading-tkr" id="loadTkr">—</div>
+  <div class="loading-step" id="loadStep">Scanning fundamentals...</div>
+</div>
+
+<!-- ═══════════════════════ RESULTS ═══════════════════════ -->
+<div id="results">
+
+  <!-- Identity -->
+  <div class="id-row">
+    <div>
+      <div class="id-ticker" id="r-ticker"></div>
+      <div class="id-name" id="r-name"></div>
+    </div>
+    <span class="id-sector" id="r-sector"></span>
+  </div>
+  <div class="price-row">
+    <span class="price" id="r-price"></span>
+    <span class="price-ch" id="r-change"></span>
+  </div>
+
+  <!-- TradingView: live price chart (full width) -->
+  <div class="tv-chart-wrap" id="tvChartWrap"></div>
+
+  <!-- Score cards -->
+  <div class="score-grid" id="r-scores"></div>
+
+  <!-- Verdict (AI) -->
+  <div class="verdict">
+    <div class="v-top">
+      <div class="ap" id="r-ap"></div>
+      <div class="v-meta" id="r-horizon"></div>
+      <div class="conf-wrap">
+        <div class="conf-num" id="r-conf"></div>
+        <div class="conf-lbl">AI Confidence</div>
+      </div>
+    </div>
+    <div class="cbar-track"><div class="cbar-fill" id="r-cbar" style="width:0%"></div></div>
+    <div class="v-text" id="r-summary"></div>
+  </div>
+
+  <!-- Main two-column: analysis cards left, TV technical analysis right -->
+  <div class="main-cols">
+    <div>
+      <div class="a2" id="r-analysis"></div>
+      <div class="cats">
+        <h3>Key Catalysts</h3>
+        <ul class="cat-list" id="r-cats"></ul>
+      </div>
+      <div class="trend" id="r-trend"></div>
+    </div>
+    <!-- TradingView: Technical Analysis widget -->
+    <div>
+      <div class="tv-panel" id="tvTechWrap">
+        <div class="tv-panel-title">Technical Analysis — Live</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom TV row: Company Profile + Fundamental Data -->
+  <div class="tv-row">
+    <div class="tv-panel" id="tvProfileWrap">
+      <div class="tv-panel-title">Company Profile</div>
+    </div>
+    <div class="tv-panel" id="tvFundWrap">
+      <div class="tv-panel-title">Fundamental Data</div>
+    </div>
+  </div>
+
+  <!-- TradingView: Top Stories (news) full width -->
+  <div class="tv-full">
+    <div class="tv-panel" id="tvNewsWrap">
+      <div class="tv-panel-title">Latest News</div>
+    </div>
+  </div>
+
+  <div class="disc">
+    ⚠️ Edge Signal is for informational purposes only and does not constitute financial advice.<br/>
+    Always conduct your own research and consult a licensed financial advisor before making investment decisions.
+  </div>
+</div>
+<!-- ════════════════════ END RESULTS ════════════════════ -->
+
+</div><!-- /wrap -->
+
+<footer>
+  <span>Edge Signal</span> · Real-time data by TradingView · AI analysis by Claude · Not financial advice
+</footer>
+
+<script>
+// ── Config ────────────────────────────────────────────────
+// Exchange prefix map — helps TradingView resolve tickers correctly
+const EXCHANGE = {
+  AAPL:'NASDAQ',MSFT:'NASDAQ',NVDA:'NASDAQ',AMZN:'NASDAQ',META:'NASDAQ',
+  GOOGL:'NASDAQ',GOOG:'NASDAQ',TSLA:'NASDAQ',AMD:'NASDAQ',INTC:'NASDAQ',
+  NFLX:'NASDAQ',PYPL:'NASDAQ',ADBE:'NASDAQ',CSCO:'NASDAQ',QCOM:'NASDAQ',
+  AVGO:'NASDAQ',COST:'NASDAQ',PEP:'NASDAQ',SBUX:'NASDAQ',
+  JPM:'NYSE',BAC:'NYSE',WMT:'NYSE',JNJ:'NYSE',XOM:'NYSE',CVX:'NYSE',
+  GS:'NYSE',MS:'NYSE',V:'NYSE',MA:'NYSE',UNH:'NYSE',PG:'NYSE',
+  HD:'NYSE',DIS:'NYSE',BA:'NYSE',GE:'NYSE',F:'NYSE',GM:'NYSE',
+  'BRK.B':'NYSE',SPY:'AMEX',QQQ:'NASDAQ',IWM:'AMEX',DIA:'AMEX',
+};
+function tvSymbol(t){
+  const ex=EXCHANGE[t.toUpperCase()];
+  return ex ? `${ex}:${t.toUpperCase()}` : t.toUpperCase();
+}
+
+// ── Loading steps ─────────────────────────────────────────
+const STEPS=[
+  'Fetching live market data...',
+  'Scanning fundamentals...',
+  'Reading technical signals...',
+  'Analyzing news & sentiment...',
+  'Running valuation models...',
+  'Synthesizing AI recommendation...'
+];
+
+// ── Quick pick ────────────────────────────────────────────
+function pick(t){document.getElementById('tickerInput').value=t;runAnalysis()}
+document.getElementById('tickerInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis()});
+
+// ── Main analysis ─────────────────────────────────────────
+async function runAnalysis(){
+  const raw=document.getElementById('tickerInput').value.trim().toUpperCase().replace(/[^A-Z.]/g,'');
+  if(!raw)return;
+  setState('loading',raw);
+
+  let si=0;
+  const st=setInterval(()=>{
+    si=Math.min(si+1,STEPS.length-1);
+    document.getElementById('loadStep').textContent=STEPS[si];
+  },1600);
+
+  const prompt=`You are a senior equity research analyst. Analyze stock ticker: ${raw}
+
+Return ONLY a valid raw JSON object — zero markdown, zero code fences, zero explanation.
+
+{
+  "ticker":"${raw}",
+  "companyName":"Full legal company name",
+  "sector":"Sector name",
+  "currentPrice":"Approximate price with $ sign",
+  "priceChange":"YTD or 52-week performance string",
+  "valuation":{
+    "status":"OVERVALUED" or "FAIRLY VALUED" or "UNDERVALUED",
+    "score":1-10,
+    "rationale":"2-3 sentences on P/E, P/S, EV/EBITDA, PEG vs peers and history"
+  },
+  "momentum":{
+    "status":"OVERBOUGHT" or "NEUTRAL" or "OVERSOLD",
+    "score":1-10,
+    "rationale":"2-3 sentences on RSI, MAs, volume, price action"
+  },
+  "sentiment":{
+    "status":"BULLISH" or "NEUTRAL" or "BEARISH",
+    "score":1-10,
+    "rationale":"2-3 sentences on analyst ratings, upgrades/downgrades, institutional flow, recent news"
+  },
+  "riskLevel":{
+    "label":"LOW" or "MODERATE" or "HIGH" or "VERY HIGH",
+    "score":1-10,
+    "factors":"1-2 sentences on specific risks"
+  },
+  "recommendation":{
+    "action":"BUY" or "SELL" or "HOLD" or "WATCH",
+    "timeHorizon":"SHORT-TERM (days-weeks)" or "LONG-TERM (months-years)" or "BOTH",
+    "confidence":1-100,
+    "summary":"4-5 sentence investment thesis covering valuation, momentum, macro context, competitive moat"
+  },
+  "catalysts":[
+    {"direction":"positive" or "negative" or "neutral","text":"Specific catalyst"},
+    {"direction":"positive" or "negative" or "neutral","text":"Specific catalyst"},
+    {"direction":"positive" or "negative" or "neutral","text":"Specific catalyst"},
+    {"direction":"positive" or "negative" or "neutral","text":"Specific catalyst"}
+  ],
+  "technicalLevels":{
+    "support":"Key support level with price",
+    "resistance":"Key resistance level with price",
+    "trend":"One-sentence trend description"
+  }
+}
+
+Be specific, data-driven, and analytical. If the ticker is invalid, set companyName to "Unknown Ticker".`;
+
+  try{
+    const resp=await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}]})
+    });
+    clearInterval(st);
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Server error ${resp.status}`)}
+    const data=await resp.json();
+    const txt=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    let parsed;
+    try{
+      const clean=txt.replace(/```json|```/g,'').trim();
+      const m=clean.match(/\{[\s\S]*\}/);
+      parsed=JSON.parse(m?m[0]:clean);
+    }catch{throw new Error('Could not parse analysis. Please try again.')}
+    renderResults(parsed);
+  }catch(e){
+    clearInterval(st);
+    setState('error',raw,e.message);
+  }
+}
+
+// ── Render ────────────────────────────────────────────────
+function renderResults(d){
+  const tk=d.ticker||'';
+  const tvSym=tvSymbol(tk);
+
+  // Identity & price
+  document.getElementById('r-ticker').textContent=tk;
+  document.getElementById('r-name').textContent=d.companyName||'';
+  document.getElementById('r-sector').textContent=d.sector||'';
+  document.getElementById('r-price').textContent=d.currentPrice||'—';
+  document.getElementById('r-change').textContent=d.priceChange||'';
+
+  // Score cards
+  const scores=[
+    {lbl:'Valuation', val:d.valuation?.status,  sub:`Score ${d.valuation?.score}/10`,  cls:valC(d.valuation?.status)},
+    {lbl:'Momentum',  val:d.momentum?.status,   sub:`Score ${d.momentum?.score}/10`,   cls:momC(d.momentum?.status)},
+    {lbl:'Sentiment', val:d.sentiment?.status,  sub:`Score ${d.sentiment?.score}/10`,  cls:sentC(d.sentiment?.status)},
+    {lbl:'Risk',      val:d.riskLevel?.label,   sub:`Score ${d.riskLevel?.score}/10`,  cls:riskC(d.riskLevel?.score)}
+  ];
+  document.getElementById('r-scores').innerHTML=scores.map(s=>`
+    <div class="sc ${s.cls}">
+      <div class="lbl">${s.lbl}</div>
+      <div class="val">${s.val||'—'}</div>
+      <div class="sub">${s.sub}</div>
+    </div>`).join('');
+
+  // Verdict
+  const act=(d.recommendation?.action||'HOLD').toUpperCase();
+  const conf=d.recommendation?.confidence||70;
+  document.getElementById('r-ap').className=`ap ${apC(act)}`;
+  document.getElementById('r-ap').innerHTML=`${apI(act)} ${act}`;
+  document.getElementById('r-horizon').textContent=d.recommendation?.timeHorizon||'';
+  document.getElementById('r-conf').textContent=`${conf}%`;
+  document.getElementById('r-summary').textContent=d.recommendation?.summary||'';
+  setTimeout(()=>{document.getElementById('r-cbar').style.width=`${conf}%`},120);
+
+  // Analysis cards
+  const rp=Math.round((d.riskLevel?.score||5)/10*100);
+  const rc=d.riskLevel?.score>=7?'#F87171':d.riskLevel?.score>=5?'#FBBF24':'#34D399';
+  const tl=d.technicalLevels||{};
+  document.getElementById('r-analysis').innerHTML=`
+    <div class="acard">
+      <h3>Valuation Analysis</h3>
+      <p>${d.valuation?.rationale||'—'}</p>
+    </div>
+    <div class="acard">
+      <h3>Technical Momentum</h3>
+      <p>${d.momentum?.rationale||'—'}</p>
+      ${tl.support?`<div class="tl"><span>Support: <strong>${tl.support}</strong></span><span>Resistance: <strong>${tl.resistance}</strong></span></div>`:''}
+    </div>
+    <div class="acard">
+      <h3>Market Sentiment</h3>
+      <p>${d.sentiment?.rationale||'—'}</p>
+    </div>
+    <div class="acard">
+      <h3>Risk Assessment</h3>
+      <p>${d.riskLevel?.factors||'—'}</p>
+      <div class="rbar"><div class="rfill" id="rfill" style="width:0%;background:${rc}"></div></div>
+    </div>`;
+  setTimeout(()=>{const r=document.getElementById('rfill');if(r)r.style.width=`${rp}%`},160);
+
+  // Catalysts
+  document.getElementById('r-cats').innerHTML=(d.catalysts||[]).map(c=>`
+    <li class="cat-li">
+      <span class="cdot c${c.direction==='positive'?'pos':c.direction==='negative'?'neg':'neu'}"></span>
+      ${c.text||''}
+    </li>`).join('');
+
+  // Trend
+  document.getElementById('r-trend').innerHTML=`<span>📈</span><span>${tl.trend||''}</span>`;
+
+  // ── Inject TradingView widgets ────────────────────────────
+
+  // 1. Advanced price chart
+  document.getElementById('tvChartWrap').innerHTML=`
+    <div class="tradingview-widget-container" style="height:420px">
+      <div class="tradingview-widget-container__widget" style="height:100%"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+      {
+        "autosize":true,
+        "symbol":"${tvSym}",
+        "interval":"D",
+        "timezone":"America/New_York",
+        "theme":"dark",
+        "style":"1",
+        "locale":"en",
+        "backgroundColor":"rgba(7,7,13,0)",
+        "gridColor":"rgba(30,30,48,0.8)",
+        "hide_top_toolbar":false,
+        "hide_legend":false,
+        "save_image":false,
+        "calendar":false,
+        "hide_volume":false,
+        "support_host":"https://www.tradingview.com"
+      }
+      <\/script>
+    </div>`;
+
+  // 2. Technical Analysis
+  document.getElementById('tvTechWrap').innerHTML=`
+    <div class="tv-panel-title">Technical Analysis — Live</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
+      {
+        "interval":"1D",
+        "width":"100%",
+        "isTransparent":true,
+        "height":450,
+        "symbol":"${tvSym}",
+        "showIntervalTabs":true,
+        "displayMode":"single",
+        "locale":"en",
+        "colorTheme":"dark"
+      }
+      <\/script>
+    </div>`;
+
+  // 3. Company Profile
+  document.getElementById('tvProfileWrap').innerHTML=`
+    <div class="tv-panel-title">Company Profile</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-profile.js" async>
+      {
+        "width":"100%",
+        "height":300,
+        "isTransparent":true,
+        "colorTheme":"dark",
+        "symbol":"${tvSym}",
+        "locale":"en"
+      }
+      <\/script>
+    </div>`;
+
+  // 4. Fundamental Data
+  document.getElementById('tvFundWrap').innerHTML=`
+    <div class="tv-panel-title">Fundamental Data</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-financials.js" async>
+      {
+        "isTransparent":true,
+        "largeChartUrl":"",
+        "displayMode":"regular",
+        "width":"100%",
+        "height":300,
+        "colorTheme":"dark",
+        "symbol":"${tvSym}",
+        "locale":"en"
+      }
+      <\/script>
+    </div>`;
+
+  // 5. Top Stories / News
+  document.getElementById('tvNewsWrap').innerHTML=`
+    <div class="tv-panel-title">Latest News</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+      {
+        "feedMode":"symbol",
+        "isTransparent":true,
+        "displayMode":"regular",
+        "width":"100%",
+        "height":400,
+        "colorTheme":"dark",
+        "symbol":"${tvSym}",
+        "locale":"en"
+      }
+      <\/script>
+    </div>`;
+
+  setState('results');
+}
+
+// ── State machine ─────────────────────────────────────────
+function setState(s,ticker='',err=''){
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('loadingBox').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('errBox').classList.add('hidden');
+  document.getElementById('runBtn').disabled=false;
+
+  if(s==='loading'){
+    document.getElementById('loadingBox').classList.add('show');
+    document.getElementById('loadTkr').textContent=ticker;
+    document.getElementById('loadStep').textContent=STEPS[0];
+    document.getElementById('runBtn').disabled=true;
+  }else if(s==='results'){
+    document.getElementById('results').classList.add('show');
+    document.getElementById('results').style.display='block';
+  }else if(s==='error'){
+    document.getElementById('emptyState').style.display='block';
+    document.getElementById('errBox').classList.remove('hidden');
+    document.getElementById('errMsg').textContent=err||'Analysis failed. Please try again.';
+  }else{
+    document.getElementById('emptyState').style.display='block';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function valC(s){s=(s||'').toUpperCase();return s==='OVERVALUED'?'bear':s==='UNDERVALUED'?'bull':'neu'}
+function momC(s){s=(s||'').toUpperCase();return s==='OVERBOUGHT'?'bear':s==='OVERSOLD'?'bull':'neu'}
+function sentC(s){s=(s||'').toUpperCase();return s==='BULLISH'?'bull':s==='BEARISH'?'bear':'neu'}
+function riskC(n){n=n||5;return n>=8?'bear':n>=6?'warn':n<=3?'bull':'neu'}
+function apC(a){return a==='BUY'?'ap-buy':a==='SELL'?'ap-sell':a==='WATCH'?'ap-watch':'ap-hold'}
+function apI(a){return a==='BUY'?'↑':a==='SELL'?'↓':a==='WATCH'?'◉':'—'}
+</script>
+</body>
+</html>
