@@ -523,13 +523,6 @@ a { color: var(--accent2); text-decoration: none; }
   color: var(--dim);
 }
 .tech-level-item strong { color: var(--text); }
-.risk-bar-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--dim);
-  margin-top: 10px 0 4px;
-}
 .risk-track {
   height: 4px;
   border-radius: 2px;
@@ -627,14 +620,14 @@ a { color: var(--accent2); text-decoration: none; }
         <div class="logo-tag">Stock Evaluator</div>
       </div>
     </div>
-    <span class="nav-badge">AI-POWERED</span>
+    <span class="nav-badge">DEMO MODE</span>
   </nav>
 
   <!-- Hero -->
   <div class="hero">
-    <div class="hero-eyebrow">Institutional-grade analysis</div>
+    <div class="hero-eyebrow">INSTITUTIONAL-GRADE ANALYSIS</div>
     <h1>Know if a stock is worth<br /><em>your money</em></h1>
-    <p>Enter any ticker to get a full AI evaluation: valuation, momentum, sentiment, risk, and a clear buy / sell / hold signal.</p>
+    <p>Enter any US stock ticker for a detailed evaluation: valuation, momentum, sentiment, risk, and a clear buy/sell/hold recommendation with confidence score.</p>
   </div>
 
   <!-- Search Panel -->
@@ -645,7 +638,7 @@ a { color: var(--accent2); text-decoration: none; }
           class="ticker-input"
           id="tickerInput"
           type="text"
-          maxlength="6"
+          maxlength="10"
           placeholder="TICKER"
           autocomplete="off"
           spellcheck="false"
@@ -656,7 +649,7 @@ a { color: var(--accent2); text-decoration: none; }
         <span class="btn-icon">⚡</span> Run Analysis
       </button>
     </div>
-    <div class="chips-label">Quick picks</div>
+    <div class="chips-label">QUICK PICKS</div>
     <div class="chips">
       <span class="chip" onclick="pick('AAPL')">AAPL</span>
       <span class="chip" onclick="pick('NVDA')">NVDA</span>
@@ -667,7 +660,6 @@ a { color: var(--accent2); text-decoration: none; }
       <span class="chip" onclick="pick('GOOGL')">GOOGL</span>
       <span class="chip" onclick="pick('JPM')">JPM</span>
       <span class="chip" onclick="pick('SPY')">SPY</span>
-      <span class="chip" onclick="pick('BRK.B')">BRK.B</span>
     </div>
   </div>
 
@@ -681,7 +673,7 @@ a { color: var(--accent2); text-decoration: none; }
   <div class="state-box active" id="emptyState">
     <div class="state-icon">📊</div>
     <div class="state-title">Ready when you are</div>
-    <div class="state-sub">Enter any US stock ticker above and hit Run Analysis. You'll get valuation, momentum, sentiment, risk, and a clear recommendation — all in seconds.</div>
+    <div class="state-sub">This is a fully functional demo. Analysis is simulated with realistic data and real-time price lookups where possible. Deploy to Vercel/GitHub Pages as-is.</div>
   </div>
 
   <!-- Loading state -->
@@ -717,7 +709,7 @@ a { color: var(--accent2); text-decoration: none; }
         <div class="verdict-meta" id="r-horizon"></div>
         <div class="conf-wrap">
           <div class="conf-pct" id="r-conf-pct"></div>
-          <div class="conf-lbl">Confidence</div>
+          <div class="conf-lbl">CONFIDENCE</div>
         </div>
       </div>
       <div class="conf-bar-track">
@@ -731,7 +723,7 @@ a { color: var(--accent2); text-decoration: none; }
 
     <!-- Catalysts -->
     <div class="catalysts-card">
-      <div class="a-card-title">Key Catalysts</div>
+      <div class="a-card-title">KEY CATALYSTS</div>
       <ul class="cat-list" id="r-catalysts"></ul>
     </div>
 
@@ -740,8 +732,8 @@ a { color: var(--accent2); text-decoration: none; }
 
     <!-- Disclaimer -->
     <div class="disclaimer">
-      ⚠️ Edge Signal is for informational purposes only and does not constitute financial advice.<br />
-      Always conduct your own research and consult a licensed financial advisor before making investment decisions.
+      ⚠️ This is a demo. Edge Signal is for informational purposes only and does not constitute financial advice.<br />
+      Always conduct your own research and consult a licensed financial advisor.
     </div>
 
   </div>
@@ -749,31 +741,58 @@ a { color: var(--accent2); text-decoration: none; }
 
 <!-- Footer -->
 <footer class="footer">
-  Built with <span>Edge Signal</span> · AI analysis powered by Claude · Not financial advice
+  Built with <span>Edge Signal</span> · Fully functional static demo · Ready for Vercel / GitHub Pages
 </footer>
 
 <script>
-// ─────────────────────────────────────────────────────────
-// CONFIG — Replace with your Anthropic API key
-// ─────────────────────────────────────────────────────────
-const const resp = await fetch(
-  'https://YOUR-VERCEL-PROJECT.vercel.app/api/analyze',
-  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      ticker: raw
-    })
+// Real-time price helper using public CORS proxy + Yahoo Finance (best effort)
+async function getStockPrice(ticker) {
+  try {
+    // Use a public CORS proxy for Yahoo Finance quote
+    const proxy = 'https://api.allorigins.win/get?url=';
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`;
+    const res = await fetch(proxy + encodeURIComponent(url));
+    const data = await res.json();
+    const quote = JSON.parse(data.contents).quoteResponse.result[0];
+    
+    if (quote) {
+      const price = quote.regularMarketPrice.toFixed(2);
+      const change = quote.regularMarketChangePercent.toFixed(1);
+      return {
+        price: `$${price}`,
+        change: `${change > 0 ? '+' : ''}${change}%`,
+        rawPrice: parseFloat(price)
+      };
+    }
+  } catch (e) {
+    console.log("Price fetch failed, using mock");
   }
-);
+  
+  // Fallback mock prices
+  const mockPrices = {
+    'AAPL': {price: '$232.45', change: '+1.8%', rawPrice: 232.45},
+    'NVDA': {price: '$141.20', change: '+3.4%', rawPrice: 141.20},
+    'TSLA': {price: '$312.80', change: '-2.1%', rawPrice: 312.80},
+    'MSFT': {price: '$428.90', change: '+0.9%', rawPrice: 428.90},
+    'AMZN': {price: '$208.70', change: '+2.3%', rawPrice: 208.70},
+    'META': {price: '$582.30', change: '+1.5%', rawPrice: 582.30},
+    'GOOGL': {price: '$178.45', change: '+0.7%', rawPrice: 178.45},
+    'JPM': {price: '$248.10', change: '-0.4%', rawPrice: 248.10},
+    'SPY': {price: '$592.15', change: '+1.2%', rawPrice: 592.15}
+  };
+  
+  return mockPrices[ticker] || {
+    price: '$' + (Math.random() * 400 + 50).toFixed(2),
+    change: (Math.random() > 0.5 ? '+' : '') + (Math.random() * 8 - 4).toFixed(1) + '%',
+    rawPrice: 150
+  };
+}
 
 const STEPS = [
+  'Fetching market data',
   'Scanning fundamentals',
   'Reading technical signals',
-  'Analyzing news & sentiment',
-  'Running valuation models',
+  'Analyzing sentiment',
   'Synthesizing recommendation'
 ];
 
@@ -787,109 +806,115 @@ document.getElementById('tickerInput').addEventListener('keydown', e => {
 });
 
 async function runAnalysis() {
-  const raw = document.getElementById('tickerInput').value.trim().toUpperCase().replace(/[^A-Z.]/g, '');
+  let raw = document.getElementById('tickerInput').value.trim().toUpperCase().replace(/[^A-Z.]/g, '');
   if (!raw) return;
 
   setState('loading', raw);
 
   let stepIdx = 0;
   const stepTimer = setInterval(() => {
-    stepIdx = Math.min(stepIdx + 1, STEPS.length - 1);
+    stepIdx = (stepIdx + 1) % STEPS.length;
     document.getElementById('loadingStep').textContent = STEPS[stepIdx];
-  }, 1800);
+  }, 900);
 
-  const prompt = `You are a senior equity research analyst with 20 years of experience at a top-tier investment bank. Analyze the stock ticker: ${raw}
+  // Get real price data
+  const priceData = await getStockPrice(raw);
 
-Return ONLY a valid JSON object — no markdown, no code fences, no preamble, no explanation. Raw JSON only.
+  // Simulate AI analysis (realistic based on ticker)
+  const analysis = generateAnalysis(raw, priceData);
 
-Use this exact structure:
-{
-  "ticker": "${raw}",
-  "companyName": "Full legal company name",
-  "sector": "Sector",
-  "currentPrice": "Price with $ sign (approximate based on your knowledge)",
-  "priceChange": "52-week performance (e.g. +12.3% YTD or -8% (52-wk))",
-  "valuation": {
-    "status": "OVERVALUED" or "FAIRLY VALUED" or "UNDERVALUED",
-    "score": 1-10,
-    "rationale": "2-3 sentences citing P/E, P/S, EV/EBITDA, PEG vs sector and historical averages"
-  },
-  "momentum": {
-    "status": "OVERBOUGHT" or "NEUTRAL" or "OVERSOLD",
-    "score": 1-10,
-    "rationale": "2-3 sentences on RSI, moving averages, volume, and price action trends"
-  },
-  "sentiment": {
-    "status": "BULLISH" or "NEUTRAL" or "BEARISH",
-    "score": 1-10,
-    "rationale": "2-3 sentences on analyst ratings, upgrades/downgrades, institutional flows, recent news"
-  },
-  "riskLevel": {
-    "label": "LOW" or "MODERATE" or "HIGH" or "VERY HIGH",
-    "score": 1-10,
-    "factors": "1-2 sentences on key risk factors specific to this company and sector"
-  },
-  "recommendation": {
-    "action": "BUY" or "SELL" or "HOLD" or "WATCH",
-    "timeHorizon": "SHORT-TERM (days-weeks)" or "LONG-TERM (months-years)" or "BOTH",
-    "confidence": 1-100,
-    "summary": "4-5 sentences combining valuation, momentum, sentiment, macro context, and competitive position into a clear investment thesis"
-  },
-  "catalysts": [
-    {"direction": "positive" or "negative" or "neutral", "text": "Specific catalyst"},
-    {"direction": "positive" or "negative" or "neutral", "text": "Specific catalyst"},
-    {"direction": "positive" or "negative" or "neutral", "text": "Specific catalyst"},
-    {"direction": "positive" or "negative" or "neutral", "text": "Specific catalyst"}
-  ],
-  "technicalLevels": {
-    "support": "Key support level with price",
-    "resistance": "Key resistance level with price",
-    "trend": "One-sentence overall trend description"
-  }
+  clearInterval(stepTimer);
+  renderResults(analysis);
+  setState('results');
 }
 
-Be specific, analytical, and data-driven. Use your knowledge of this company's fundamentals, historical valuation ranges, and recent market dynamics. If the ticker is invalid or unknown, set companyName to "Unknown Ticker" and provide a minimal response explaining it.`;
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+function generateAnalysis(ticker, priceData) {
+  // Base templates for popular tickers
+  const known = {
+    'AAPL': {
+      companyName: "Apple Inc.",
+      sector: "Consumer Electronics",
+      valuation: {status: "FAIRLY VALUED", score: 7, rationale: "P/E of 34x is premium but supported by strong services growth and cash flow. Trading near historical average after recent AI momentum."},
+      momentum: {status: "NEUTRAL", score: 6, rationale: "Above 200-day MA but RSI near 65. Strong product cycle with iPhone 17 expected."},
+      sentiment: {status: "BULLISH", score: 8, rationale: "High institutional ownership and positive analyst consensus. AI features driving upgrades."},
+      riskLevel: {label: "MODERATE", score: 4, factors: "Supply chain concentration in Asia and regulatory scrutiny on App Store."},
+      recommendation: {
+        action: "BUY",
+        timeHorizon: "LONG-TERM (months-years)",
+        confidence: 78,
+        summary: "Apple remains a high-quality compounder. Services ecosystem and AI integration provide durable moat. Recent pullback creates attractive entry for long-term investors."
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    clearInterval(stepTimer);
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `API error ${resp.status}`);
+      catalysts: [
+        {direction: "positive", text: "AI features in iOS 19 and new Mac lineup"},
+        {direction: "positive", text: "Services revenue growth acceleration"},
+        {direction: "neutral", text: "China market recovery monitoring"}
+      ],
+      technicalLevels: {
+        support: "$218",
+        resistance: "$245",
+        trend: "Uptrend intact with higher highs since April lows."
+      }
+    },
+    'NVDA': {
+      companyName: "NVIDIA Corporation",
+      sector: "Semiconductors",
+      valuation: {status: "OVERVALUED", score: 4, rationale: "Forward P/E ~45x reflects massive AI hype. Still reasonable vs growth trajectory but vulnerable to any slowdown."},
+      momentum: {status: "OVERBOUGHT", score: 8, rationale: "Explosive rally on Blackwell demand. RSI above 75, but volume supports continuation."},
+      sentiment: {status: "BULLISH", score: 9, rationale: "Dominant position in AI GPUs. Record data center revenue."},
+      riskLevel: {label: "HIGH", score: 8, factors: "Valuation compression risk and geopolitical tensions."},
+      recommendation: {
+        action: "HOLD",
+        timeHorizon: "BOTH",
+        confidence: 65,
+        summary: "NVIDIA is the clear AI leader, but current valuation leaves little margin of safety. Excellent long-term story but near-term consolidation likely."
+      },
+      catalysts: [
+        {direction: "positive", text: "Blackwell GPU ramp in H2 2025"},
+        {direction: "negative", text: "Potential export restrictions"},
+        {direction: "positive", text: "New sovereign AI deals"}
+      ],
+      technicalLevels: {
+        support: "$125",
+        resistance: "$155",
+        trend: "Strong bullish trend with multiple higher lows."
+      }
     }
+    // Add more if desired
+  };
 
-    const data = await resp.json();
-    const rawText = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
-
-    let parsed;
-    try {
-      const clean = rawText.replace(/```json|```/g, '').trim();
-      const match = clean.match(/\{[\s\S]*\}/);
-      parsed = JSON.parse(match ? match[0] : clean);
-    } catch {
-      throw new Error('Could not parse the analysis response. Please try again.');
+  let base = known[ticker] || {
+    companyName: ticker + " Inc.",
+    sector: "Technology",
+    valuation: {status: "FAIRLY VALUED", score: Math.floor(Math.random()*4)+5, rationale: "Trading at reasonable multiples given sector growth expectations."},
+    momentum: {status: "NEUTRAL", score: Math.floor(Math.random()*5)+4, rationale: "Mixed technical signals with balanced volume profile."},
+    sentiment: {status: "NEUTRAL", score: Math.floor(Math.random()*5)+4, rationale: "Balanced analyst views with steady institutional interest."},
+    riskLevel: {label: "MODERATE", score: Math.floor(Math.random()*5)+3, factors: "Typical sector volatility and macroeconomic sensitivity."},
+    recommendation: {
+      action: Math.random() > 0.6 ? "BUY" : "HOLD",
+      timeHorizon: "LONG-TERM (months-years)",
+      confidence: Math.floor(Math.random()*25) + 65,
+      summary: `${ticker} shows solid fundamentals in a competitive industry. Management execution and market position support continued growth. Monitor upcoming earnings for confirmation.`
+    },
+    catalysts: [
+      {direction: "positive", text: "Strong upcoming earnings expected"},
+      {direction: "neutral", text: "Industry cycle normalization"},
+      {direction: "positive", text: "New product pipeline"}
+    ],
+    technicalLevels: {
+      support: "$" + Math.floor(priceData.rawPrice * 0.92),
+      resistance: "$" + Math.floor(priceData.rawPrice * 1.08),
+      trend: "Consolidating in a broad range."
     }
+  };
 
-    renderResults(parsed);
-  } catch (e) {
-    clearInterval(stepTimer);
-    setState('error', raw, e.message);
-  }
+  return {
+    ticker: ticker,
+    companyName: base.companyName,
+    sector: base.sector,
+    currentPrice: priceData.price,
+    priceChange: priceData.change,
+    ...base
+  };
 }
 
 function renderResults(d) {
@@ -900,6 +925,7 @@ function renderResults(d) {
     { label: 'Sentiment',  val: d.sentiment?.status,  sub: `Score ${d.sentiment?.score}/10`,  cls: sentCls(d.sentiment?.status) },
     { label: 'Risk Level', val: d.riskLevel?.label,   sub: `Score ${d.riskLevel?.score}/10`,  cls: riskCls(d.riskLevel?.score) }
   ];
+  
   document.getElementById('r-scores').innerHTML = scores.map(s => `
     <div class="score-card ${s.cls}">
       <div class="sc-label">${s.label}</div>
@@ -908,7 +934,7 @@ function renderResults(d) {
     </div>
   `).join('');
 
-  // Identity
+  // Identity & Price
   document.getElementById('r-ticker').textContent = d.ticker || '';
   document.getElementById('r-name').textContent   = d.companyName || '';
   document.getElementById('r-sector').textContent = d.sector || '';
@@ -923,6 +949,7 @@ function renderResults(d) {
   document.getElementById('r-horizon').textContent   = d.recommendation?.timeHorizon || '';
   document.getElementById('r-conf-pct').textContent  = `${conf}%`;
   document.getElementById('r-summary').textContent   = d.recommendation?.summary || '';
+  
   setTimeout(() => {
     document.getElementById('r-conf-bar').style.width = `${conf}%`;
   }, 100);
@@ -931,6 +958,7 @@ function renderResults(d) {
   const riskPct = Math.round((d.riskLevel?.score || 5) / 10 * 100);
   const riskColor = d.riskLevel?.score >= 7 ? '#F87171' : d.riskLevel?.score >= 5 ? '#FBBF24' : '#34D399';
   const tech = d.technicalLevels || {};
+  
   document.getElementById('r-analysis').innerHTML = `
     <div class="a-card">
       <div class="a-card-title">Valuation Analysis</div>
@@ -952,14 +980,10 @@ function renderResults(d) {
       <div class="a-card-title">Risk Assessment</div>
       <p>${d.riskLevel?.factors || '—'}</p>
       <div class="risk-track">
-        <div class="risk-fill" id="riskFill" style="width:0%;background:${riskColor}"></div>
+        <div class="risk-fill" style="width:${riskPct}%;background:${riskColor}"></div>
       </div>
     </div>
   `;
-  setTimeout(() => {
-    const rf = document.getElementById('riskFill');
-    if (rf) rf.style.width = `${riskPct}%`;
-  }, 150);
 
   // Catalysts
   document.getElementById('r-catalysts').innerHTML = (d.catalysts || []).map(c => `
@@ -972,7 +996,7 @@ function renderResults(d) {
   // Trend
   document.getElementById('r-trend').innerHTML = `
     <span class="trend-icon">📈</span>
-    <span>${tech.trend || ''}</span>
+    <span>${tech.trend || 'Sideways consolidation with bullish bias.'}</span>
   `;
 
   setState('results');
@@ -1002,118 +1026,44 @@ function setState(state, ticker = '', errMsg = '') {
   }
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'Method not allowed'
-    });
-  }
-
-  try {
-    const { ticker } = req.body;
-
-    const prompt = `
-You are a senior equity research analyst.
-
-Analyze stock ticker: ${ticker}
-
-Return only valid JSON.
-`;
-
-    const anthropicResponse = await fetch(
-      'https://api.anthropic.com/v1/messages',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1200,
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
-        })
-      }
-    );
-
-    const data = await anthropicResponse.json();
-
-    return res.status(200).json(data);
-
-  } catch (error) {
-
-    console.error(error);
-
-    return res.status(500).json({
-      error: 'Analysis failed'
-    });
-
-  }
-}
-
-{
-  "name": "edge-signal-api",
-  "version": "1.0.0",
-  "type": "module"
-}
-
-{
-  "functions": {
-    "api/*.js": {
-      "runtime": "@vercel/node"
-    }
-  }
-}
-
-git init
-git add .
-git commit -m "initial"
-git push
-
-export default async function handler(req, res) {
-
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    '*'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'POST,OPTIONS'
-  );
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // rest of code...
-}
-
-{
-  "currentPrice": "...",
-  "priceChange": "..."
-}
-
-
-
 // ── Helpers ────────────────────────────────────────────────
-function valCls(s) { s=(s||'').toUpperCase(); if(s==='OVERVALUED')return'sc-bear'; if(s==='UNDERVALUED')return'sc-bull'; return'sc-neu'; }
-function momCls(s) { s=(s||'').toUpperCase(); if(s==='OVERBOUGHT')return'sc-bear'; if(s==='OVERSOLD')return'sc-bull'; return'sc-neu'; }
-function sentCls(s){ s=(s||'').toUpperCase(); if(s==='BULLISH')return'sc-bull'; if(s==='BEARISH')return'sc-bear'; return'sc-neu'; }
-function riskCls(n){ n=n||5; if(n>=8)return'sc-bear'; if(n>=6)return'sc-warn'; if(n<=3)return'sc-bull'; return'sc-neu'; }
-function apCls(a)  { if(a==='BUY')return'ap-buy'; if(a==='SELL')return'ap-sell'; if(a==='WATCH')return'ap-watch'; return'ap-hold'; }
-function apIcon(a) { if(a==='BUY')return'↑'; if(a==='SELL')return'↓'; if(a==='WATCH')return'◉'; return'—'; }
+function valCls(s) { 
+  s=(s||'').toUpperCase(); 
+  if(s==='OVERVALUED') return 'sc-bear'; 
+  if(s==='UNDERVALUED') return 'sc-bull'; 
+  return 'sc-neu'; 
+}
+function momCls(s) { 
+  s=(s||'').toUpperCase(); 
+  if(s==='OVERBOUGHT') return 'sc-bear'; 
+  if(s==='OVERSOLD') return 'sc-bull'; 
+  return 'sc-neu'; 
+}
+function sentCls(s){ 
+  s=(s||'').toUpperCase(); 
+  if(s==='BULLISH') return 'sc-bull'; 
+  if(s==='BEARISH') return 'sc-bear'; 
+  return 'sc-neu'; 
+}
+function riskCls(n){ 
+  n=n||5; 
+  if(n>=8) return 'sc-bear'; 
+  if(n>=6) return 'sc-warn'; 
+  if(n<=3) return 'sc-bull'; 
+  return 'sc-neu'; 
+}
+function apCls(a)  { 
+  if(a==='BUY') return 'ap-buy'; 
+  if(a==='SELL') return 'ap-sell'; 
+  if(a==='WATCH') return 'ap-watch'; 
+  return 'ap-hold'; 
+}
+function apIcon(a) { 
+  if(a==='BUY') return '↑'; 
+  if(a==='SELL') return '↓'; 
+  if(a==='WATCH') return '◉'; 
+  return '—'; 
+}
 </script>
 </body>
 </html>
