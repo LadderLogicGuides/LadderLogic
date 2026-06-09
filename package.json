@@ -1,0 +1,8 @@
+{
+  "name": "edge-signal",
+  "version": "1.0.0",
+  "description": "Edge Signal AI Stock Evaluator",
+  "engines": {
+    "node": "18"
+  }
+}
